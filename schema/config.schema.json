@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tenthirtyam/artifactory-content-library/schema/config.schema.json",
+  "title": "Artifactory Content Library Configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "libraries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/library"
+      }
+    },
+    "defaults": {
+      "$ref": "#/$defs/defaults"
+    },
+    "logging": {
+      "$ref": "#/$defs/logging"
+    },
+    "vsphere": {
+      "$ref": "#/$defs/vsphere"
+    },
+    "library": {
+      "$ref": "#/$defs/subscribe"
+    }
+  },
+  "$defs": {
+    "library": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "artifactory"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "skip_cert": {
+          "type": "boolean"
+        },
+        "artifactory": {
+          "$ref": "#/$defs/artifactory"
+        }
+      }
+    },
+    "artifactory": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "ssl_verify": {
+          "type": "boolean"
+        },
+        "rate_limit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_retries": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "auth": {
+          "$ref": "#/$defs/auth"
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "artifactory"
+          ]
+        },
+        "skip_cert": {
+          "type": "boolean"
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "structured"
+          ]
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "debug",
+            "info",
+            "warning",
+            "warn",
+            "error",
+            "DEBUG",
+            "INFO",
+            "WARNING",
+            "WARN",
+            "ERROR"
+          ]
+        }
+      }
+    },
+    "vsphere": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "ssl_verify": {
+          "type": "boolean"
+        }
+      }
+    },
+    "subscribe": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "datacenter": {
+          "type": "string"
+        },
+        "datastore": {
+          "type": "string"
+        },
+        "auto_sync": {
+          "type": "boolean"
+        },
+        "on_demand": {
+          "type": "boolean"
+        },
+        "publisher_subscription_url": {
+          "type": "string"
+        },
+        "publisher_ssl_thumbprint": {
+          "type": "string"
+        },
+        "publisher_username": {
+          "type": "string"
+        },
+        "publisher_password": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
