@@ -1,0 +1,32 @@
+# Ignore editor directories.
+.idea/
+.vscode/
+
+# Ignore build and distribution directories.
+bin/
+dist/
+build/
+coverage.out
+*.exe
+*.test
+*.out
+
+# Ignore Go workspace / module local files.
+vendor/
+
+# Ignore temporary editor files.
+*~
+*.swp
+*.swo
+
+# Ignore macOS desktop services store files.
+**/.DS_Store
+
+# Ignore local config overrides.
+config.yaml
+config.yml
+*.local.yaml
+
+# Ignore documentation build artifacts.
+.venv/
+site/
