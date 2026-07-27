@@ -1,0 +1,68 @@
+services:
+  postgresql:
+    image: postgres:13
+    container_name: postgresql
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: artifactory
+      # The following must match the DB_USER and DB_PASSWORD values passed to Artifactory
+      POSTGRES_USER: artifactory
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U artifactory -d artifactory"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 32000
+        hard: 40000
+
+  artifactory:
+    image: releases-docker.jfrog.io/jfrog/artifactory-oss:6.23.13
+    # Artifactory OSS 6.x is x86_64-only; this enables Docker Desktop emulation on Apple Silicon.
+    platform: linux/amd64
+    container_name: artifactory
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    volumes:
+      - artifactory-data:/var/opt/jfrog/artifactory
+    environment:
+      DB_TYPE: postgresql
+      # The following must match the POSTGRES_USER and POSTGRES_PASSWORD values passed to PostgreSQL
+      DB_USER: artifactory
+      DB_PASSWORD: password
+      # Add extra Java options by uncommenting the following line
+      # EXTRA_JAVA_OPTIONS: -Xms512m -Xmx4g
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/curl/curl",
+          "-sf",
+          "-u",
+          "admin:password",
+          "http://localhost:8081/artifactory/api/system/ping",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 32000
+        hard: 40000
+
+volumes:
+  postgresql-data:
+  artifactory-data:
