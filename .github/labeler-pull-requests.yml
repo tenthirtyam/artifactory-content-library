@@ -1,0 +1,32 @@
+---
+chore:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".editorconfig"
+          - ".github/**/*.yml"
+          - ".gitattributes"
+          - ".gitignore"
+          - ".golangci.yml"
+          - ".goreleaser.yaml"
+          - "Makefile"
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "go.mod"
+          - "go.sum"
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**/*"
+          - "example/**/*"
+          - "LICENSE"
+          - "NOTICE.md"
+github-actions:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**/*"
+needs-review:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**"
