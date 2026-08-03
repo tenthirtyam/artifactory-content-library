@@ -1,0 +1,208 @@
+---
+# Copyright (c) Ryan Johnson
+# SPDX-License-Identifier: MIT
+
+# ----------------------------------------------------------------------------------- #
+# Project Information
+# ----------------------------------------------------------------------------------- #
+
+site_name: Artifactory Content Library for VMware vSphere
+site_description: Generate metadata for content stored in JFrog Artifactory for use as a VMware vSphere content library
+site_url: https://tenthirtyam.org/artifactory-content-library/
+site_author: Ryan Johnson
+docs_dir: docs
+site_dir: ../site
+
+# ----------------------------------------------------------------------------------- #
+# Repository
+# ----------------------------------------------------------------------------------- #
+
+repo_url: https://github.com/tenthirtyam/artifactory-content-library
+repo_name: GitHub
+
+# ----------------------------------------------------------------------------------- #
+# Copyright
+# ----------------------------------------------------------------------------------- #
+
+copyright: Copyright (c) Ryan Johnson.<br/>Licensed under the MIT License.
+
+# ----------------------------------------------------------------------------------- #
+# Configuration
+# ----------------------------------------------------------------------------------- #
+
+theme:
+  name: materialx
+  language: en
+  custom_dir: overrides
+  admonition:
+    license:
+      icon: octicons/law-16
+      color: '#546e7a'
+  icon:
+    logo: material/package-variant
+    repo: fontawesome/brands/github
+  palette:
+  - media: "(prefers-color-scheme)"
+    toggle:
+      icon: material/brightness-auto
+      name: Switch to Light Mode
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    toggle:
+      icon: material/brightness-7
+      name: Switch to Dark Mode
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    toggle:
+      icon: material/brightness-4
+      name: Use Your System Preferences
+  font:
+    text: Inter
+    code: Fira Code
+  features:
+  - content.code.annotate
+  - content.code.copy
+  - content.tabs.link
+  - navigation.expand
+  - navigation.footer
+  - navigation.indexes
+  - navigation.indent
+  - navigation.instant
+  - navigation.path
+  - navigation.prune
+  - navigation.sections
+  - navigation.top
+  - navigation.tracking
+  - search.highlight
+  - search.share
+  - search.suggest
+  - toc.follow
+
+# ----------------------------------------------------------------------------------- #
+# Plugins
+# ----------------------------------------------------------------------------------- #
+
+plugins:
+  - minify:
+      minify_html: true
+  - open-in-new-tab
+  - materialx/search
+  - git-revision-date-localized:
+      enable_creation_date: false
+      exclude:
+        - index.md
+      fallback_to_build_date: true
+      type: timeago
+
+# ----------------------------------------------------------------------------------- #
+# Customization
+# ----------------------------------------------------------------------------------- #
+
+extra:
+  generator: false
+  version:
+    provider: mike
+    default:
+      - latest
+      - development
+  nav_icons:
+    Releases: octicons/tag-16
+    Release Verification: octicons/verified-16
+    Discussions: octicons/comment-discussion-16
+    Sponsor: octicons/heart-16
+  social:
+    - icon: fontawesome/solid/paper-plane
+      link: mailto:&#114;&#121;&#97;&#110;&#64;&#116;&#101;&#110;&#116;&#104;&#105;&#114;&#116;&#121;&#97;&#109;&#46;&#111;&#114;&#103;?subject=Artifactory%20Content%20Library
+      name: Inbox Me
+    - icon: fontawesome/brands/bluesky
+      link: https://bsky.app/profile/ryan.tenthirtyam.org
+      name: Follow on Bluesky
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/in/tenthirtyam
+      name: Connect on LinkedIn
+    - icon: fontawesome/brands/github
+      link: https://github.com/tenthirtyam
+      name: Follow on GitHub
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/r/tenthirtyam
+      name: Follow on Docker Hub
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra_javascript:
+  - assets/javascripts/version-slot.js
+
+# ----------------------------------------------------------------------------------- #
+# Extensions
+# ----------------------------------------------------------------------------------- #
+
+markdown_extensions:
+- abbr
+- admonition
+- attr_list
+- footnotes
+- md_in_html
+- pymdownx.betterem:
+    smart_enable: all
+- pymdownx.critic
+- pymdownx.caret
+- pymdownx.details
+- pymdownx.emoji:
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg
+- pymdownx.highlight:
+    anchor_linenums: true
+    line_spans: __span
+    pygments_lang_class: true
+    use_pygments: true
+- pymdownx.inlinehilite
+- pymdownx.keys
+- pymdownx.snippets:
+    check_paths: true
+    dedent_subsections: true
+    base_path:
+      - docs/docs
+      - .
+- pymdownx.superfences:
+    custom_fences:
+    - name: mermaid
+      class: mermaid
+      format: !!python/name:pymdownx.superfences.fence_code_format
+- pymdownx.tabbed:
+    alternate_style: true
+- pymdownx.tasklist:
+    custom_checkbox: true
+- pymdownx.mark
+- pymdownx.tilde
+- tables
+- toc:
+    permalink: true
+    toc_depth: 3
+
+# ----------------------------------------------------------------------------------- #
+# Navigation
+# ----------------------------------------------------------------------------------- #
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - getting-started/index.md
+      - Installation: getting-started/installation.md
+      - Content Layout: getting-started/content-layout.md
+      - Generate: getting-started/generate.md
+      - Subscribe: getting-started/subscribe.md
+  - Configuration:
+      - configuration/index.md
+      - Reference: configuration/reference.md
+  - Community:
+      - community/index.md
+      - Contributing: community/contributing.md
+      - Code of Conduct: community/code-of-conduct.md
+      - Releases: https://github.com/tenthirtyam/artifactory-content-library/releases
+      - Release Verification: community/release-verification.md
+      - Discussions: https://github.com/tenthirtyam/artifactory-content-library/discussions
+      - Disclaimer: community/disclaimer.md
+      - License: community/license.md
+      - Security: community/security.md
+      - Sponsor: https://github.com/sponsors/tenthirtyam

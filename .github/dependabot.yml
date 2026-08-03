@@ -29,3 +29,22 @@ updates:
     labels:
       - "chore"
       - "dependencies"
+
+  # Documentation (Python / Properdocs)
+  - package-ecosystem: "pip"
+    directory: "/docs"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "chore"
+      - "dependencies"
+    allow:
+      - dependency-name: "mkdocs-materialx"
+      - dependency-name: "properdocs"
+      - dependency-name: "mike"
+      - dependency-name: "mkdocs-git-revision-date-localized-plugin"
+      - dependency-name: "mkdocs-minify-plugin"
+      - dependency-name: "mkdocs-open-in-new-tab"
