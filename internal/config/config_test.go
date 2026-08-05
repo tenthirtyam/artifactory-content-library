@@ -36,7 +36,7 @@ func TestEnvExpansion(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cfg.yaml")
 	_ = os.Setenv("TEST_VCSP_TOKEN", "secret-token")
-	defer os.Unsetenv("TEST_VCSP_TOKEN")
+	defer func() { _ = os.Unsetenv("TEST_VCSP_TOKEN") }()
 	content := "libraries:\n  - name: x\n    type: artifactory\n    artifactory:\n      auth:\n        token: ${TEST_VCSP_TOKEN}\n"
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatal(err)

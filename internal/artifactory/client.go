@@ -288,12 +288,16 @@ func (c *Client) Upload(ctx context.Context, relPath string, content []byte, con
 			return err
 		}
 		tmpName := tmp.Name()
-		defer os.Remove(tmpName)
-		if _, err := tmp.Write(content); err != nil {
-			tmp.Close()
+		defer func(name string) {
+			_ = os.Remove(name)
+		}(tmpName)
+		if _, werr := tmp.Write(content); werr != nil {
+			_ = tmp.Close()
+			return werr
+		}
+		if err := tmp.Close(); err != nil {
 			return err
 		}
-		tmp.Close()
 
 		params := services.NewUploadParams()
 		params.Pattern = tmpName
