@@ -5,6 +5,7 @@ package artifactory_test
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -212,13 +213,7 @@ func TestGenerateOrphanISODelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	found := false
-	for _, p := range m.deleted {
-		if p == orphanPath {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(m.deleted, orphanPath)
 	if !found {
 		t.Fatalf("expected delete of %s; deleted=%v", orphanPath, m.deleted)
 	}
