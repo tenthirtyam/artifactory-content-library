@@ -14,10 +14,10 @@ import (
 // File is the top-level YAML configuration.
 type File struct {
 	Libraries []Library `yaml:"libraries"`
-	Defaults  Defaults  `yaml:"defaults"`
-	Logging   Logging   `yaml:"logging"`
-	VSphere   VSphere   `yaml:"vsphere"`
-	Library   Subscribe `yaml:"library"`
+	Defaults  defaults  `yaml:"defaults"`
+	Logging   logging   `yaml:"logging"`
+	VSphere   vSphere   `yaml:"vsphere"`
+	Library   subscribe `yaml:"library"`
 }
 
 // Library describes one content library generation target.
@@ -48,28 +48,28 @@ type Auth struct {
 	Token    string `yaml:"token"`
 }
 
-// Defaults are shared library defaults.
-type Defaults struct {
+// defaults are shared library defaults.
+type defaults struct {
 	Type     string `yaml:"type"`
 	SkipCert *bool  `yaml:"skip_cert"`
 }
 
-// Logging configures log output.
-type Logging struct {
+// logging configures log output.
+type logging struct {
 	Format string `yaml:"format"`
 	Level  string `yaml:"level"`
 }
 
-// VSphere holds vCenter connection settings.
-type VSphere struct {
+// vSphere holds vCenter connection settings.
+type vSphere struct {
 	URL       string `yaml:"url"`
 	Username  string `yaml:"username"`
 	Password  string `yaml:"password"`
 	SSLVerify *bool  `yaml:"ssl_verify"`
 }
 
-// Subscribe holds subscribed library settings.
-type Subscribe struct {
+// subscribe holds subscribed library settings.
+type subscribe struct {
 	Name                     string `yaml:"name"`
 	Datacenter               string `yaml:"datacenter"`
 	Datastore                string `yaml:"datastore"`
@@ -93,7 +93,7 @@ func Load(path string) (*File, []string, error) {
 		return nil, nil, fmt.Errorf("configuration file not found: %s", path)
 	}
 	raw := string(data)
-	warnings := PlaintextSecretWarnings(raw)
+	warnings := plaintextSecretWarnings(raw)
 	expanded := expandEnv(raw)
 
 	var cfg File

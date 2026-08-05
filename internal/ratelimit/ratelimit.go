@@ -52,9 +52,3 @@ func (l *Limiter) Acquire() {
 		}
 	}
 }
-
-// MaxCalls returns the configured max calls.
-func (l *Limiter) MaxCalls() int { return l.maxCalls }
-
-// Window returns the configured window.
-func (l *Limiter) Window() time.Duration { return l.window }

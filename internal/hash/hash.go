@@ -11,14 +11,14 @@ import (
 	"path/filepath"
 )
 
-const BlockSize = 1 << 20 // 1MB
+const blockSize = 1 << 20 // 1MB
 
-// MD5File updates or creates an MD5 hash from a reader.
-func MD5File(r io.Reader, existing hash.Hash) (hash.Hash, error) {
+// md5File updates or creates an MD5 hash from a reader.
+func md5File(r io.Reader, existing hash.Hash) (hash.Hash, error) {
 	if existing == nil {
 		existing = md5.New()
 	}
-	buf := make([]byte, BlockSize)
+	buf := make([]byte, blockSize)
 	for {
 		n, err := r.Read(buf)
 		if n > 0 {
@@ -49,7 +49,7 @@ func MD5Folder(folderPath string, excludeName string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		h, err = MD5File(f, h)
+		h, err = md5File(f, h)
 		_ = f.Close()
 		if err != nil {
 			return "", err

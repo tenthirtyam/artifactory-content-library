@@ -27,7 +27,7 @@ func TestValidatePathRejectsInvalid(t *testing.T) {
 	if _, err := security.ValidatePath("../../../etc/passwd"); err == nil {
 		t.Fatal("expected traversal error")
 	}
-	long := strings.Repeat("a", security.MaxPathLength+1)
+	long := strings.Repeat("a", 4097)
 	if _, err := security.ValidatePath(long); err == nil {
 		t.Fatal("expected length error")
 	}
@@ -44,7 +44,7 @@ func TestSanitizeLibraryName(t *testing.T) {
 	if _, err := security.SanitizeLibraryName(""); err == nil {
 		t.Fatal("expected empty name error")
 	}
-	if _, err := security.SanitizeLibraryName(strings.Repeat("a", security.MaxLibraryNameLength+1)); err == nil {
+	if _, err := security.SanitizeLibraryName(strings.Repeat("a", 256)); err == nil {
 		t.Fatal("expected length error")
 	}
 	if _, err := security.SanitizeLibraryName("Library<script>alert('xss')</script>"); err == nil {

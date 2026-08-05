@@ -21,9 +21,9 @@ import (
 	"github.com/tenthirtyam/artifactory-content-library/internal/vcsp"
 )
 
-// DirToItem converts a directory into a VCSP item.
+// dirToItem converts a directory into a VCSP item.
 // directory is the library-relative path (SelfHref parent), e.g. "debian-iso" or "iso/ubuntu/amd64".
-func DirToItem(dirPath, directory string, md5Enabled bool, libID string) (vcsp.Item, error) {
+func dirToItem(dirPath, directory string, md5Enabled bool, libID string) (vcsp.Item, error) {
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return vcsp.Item{}, err
@@ -214,7 +214,7 @@ func Generate(libName, libPath string, md5Enabled bool) error {
 
 	for _, itemPath := range contentDirs {
 		p := filepath.Join(libPath, filepath.FromSlash(itemPath))
-		itemJSON, err := DirToItem(p, itemPath, md5Enabled, vcsp.NormalizeItemID(libID))
+		itemJSON, err := dirToItem(p, itemPath, md5Enabled, vcsp.NormalizeItemID(libID))
 		if err != nil {
 			return err
 		}

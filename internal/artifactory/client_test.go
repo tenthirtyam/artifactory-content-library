@@ -120,7 +120,7 @@ func TestSetProperties(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}, nil)
 
-	if err := c.SetProperties(context.Background(), "dir/item", map[string]string{"k": "v", "a": "b"}); err != nil {
+	if err := c.setProperties(context.Background(), "dir/item", map[string]string{"k": "v", "a": "b"}); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(gotURL, "/api/metadata/repo/dir/item") || !strings.Contains(gotURL, "properties=") {
@@ -179,8 +179,8 @@ func TestDoAuthHeaders(t *testing.T) {
 
 func TestRepoPathAndAccessors(t *testing.T) {
 	c := &Client{baseURL: "https://example.com/artifactory", repo: "my-repo"}
-	if c.Repo() != "my-repo" || c.BaseURL() != "https://example.com/artifactory" {
-		t.Fatalf("accessors: %q %q", c.Repo(), c.BaseURL())
+	if c.repo != "my-repo" || c.baseURL != "https://example.com/artifactory" {
+		t.Fatalf("fields: %q %q", c.repo, c.baseURL)
 	}
 	if got := c.repoPath(""); got != "my-repo" {
 		t.Fatalf("empty: %q", got)

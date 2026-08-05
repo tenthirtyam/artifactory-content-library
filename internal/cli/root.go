@@ -96,8 +96,8 @@ func releaseTag(v string) string {
 	return v
 }
 
-// NewRootCommand builds the artifactory-content-library CLI.
-func NewRootCommand() *cobra.Command {
+// newRootCommand builds the artifactory-content-library CLI.
+func newRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:          "artifactory-content-library",
 		Short:        "Generate vSphere content library metadata for JFrog Artifactory",
@@ -606,7 +606,7 @@ func runSubscribe(ctx context.Context) error {
 // Execute runs the root command.
 func Execute() {
 	ctx := context.Background()
-	if err := NewRootCommand().ExecuteContext(ctx); err != nil {
+	if err := newRootCommand().ExecuteContext(ctx); err != nil {
 		os.Exit(1)
 	}
 }

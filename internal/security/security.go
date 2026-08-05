@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	MaxPathLength        = 4096
-	MaxLibraryNameLength = 255
+	maxPathLength        = 4096
+	maxLibraryNameLength = 255
 )
 
 var blockedPathPatterns = []*regexp.Regexp{
@@ -30,17 +30,17 @@ var dangerousNamePatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)on\w+\s*=`),
 }
 
-// Error represents a security validation failure.
-type Error struct {
-	Message string
+// validationError represents a security validation failure.
+type validationError struct {
+	message string
 }
 
-func (e *Error) Error() string {
-	return fmt.Sprintf("Security validation failed: %s", e.Message)
+func (e *validationError) Error() string {
+	return fmt.Sprintf("Security validation failed: %s", e.message)
 }
 
 func NewError(msg string) error {
-	return &Error{Message: msg}
+	return &validationError{message: msg}
 }
 
 // ValidatePath validates and normalizes a filesystem path.
@@ -48,8 +48,8 @@ func ValidatePath(path string) (string, error) {
 	if path == "" {
 		return "", fmt.Errorf("path cannot be empty")
 	}
-	if len(path) > MaxPathLength {
-		return "", NewError(fmt.Sprintf("Path exceeds maximum length of %d characters", MaxPathLength))
+	if len(path) > maxPathLength {
+		return "", NewError(fmt.Sprintf("Path exceeds maximum length of %d characters", maxPathLength))
 	}
 	for _, pattern := range blockedPathPatterns {
 		if pattern.MatchString(path) {
@@ -72,8 +72,8 @@ func SanitizeLibraryName(name string) (string, error) {
 	if name == "" {
 		return "", NewError("Library name cannot be empty")
 	}
-	if len(name) > MaxLibraryNameLength {
-		return "", NewError(fmt.Sprintf("Library name exceeds maximum length of %d characters", MaxLibraryNameLength))
+	if len(name) > maxLibraryNameLength {
+		return "", NewError(fmt.Sprintf("Library name exceeds maximum length of %d characters", maxLibraryNameLength))
 	}
 	// Skip ".." pattern for names (index 0); check the rest.
 	for _, pattern := range blockedPathPatterns[1:] {

@@ -30,9 +30,6 @@ func newMock() *mockStorage {
 	}
 }
 
-func (m *mockStorage) Repo() string    { return "repo" }
-func (m *mockStorage) BaseURL() string { return "https://example.com/artifactory" }
-
 func (m *mockStorage) FileExists(_ context.Context, p string) (bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

@@ -11,9 +11,6 @@ import (
 
 func TestRateLimiter(t *testing.T) {
 	l := ratelimit.New(2, 50*time.Millisecond)
-	if l.MaxCalls() != 2 {
-		t.Fatal()
-	}
 	start := time.Now()
 	l.Acquire()
 	l.Acquire()

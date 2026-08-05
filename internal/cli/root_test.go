@@ -27,7 +27,7 @@ func resetViper(t *testing.T) {
 func execRoot(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 	resetViper(t)
-	cmd := NewRootCommand()
+	cmd := newRootCommand()
 	buf := &bytes.Buffer{}
 	cmd.SetOut(buf)
 	cmd.SetErr(buf)

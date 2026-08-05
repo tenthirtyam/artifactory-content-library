@@ -125,7 +125,7 @@ func CreateSubscribedLibrary(ctx context.Context, cfg SubscribeConfig) (string, 
 	return id, nil
 }
 
-// NormalizeURL strips trailing slashes.
-func NormalizeURL(u string) string {
+// normalizeURL strips trailing slashes.
+func normalizeURL(u string) string {
 	return strings.TrimRight(u, "/")
 }

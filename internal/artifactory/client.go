@@ -48,8 +48,6 @@ type StorageClient interface {
 	Download(ctx context.Context, relPath string) ([]byte, error)
 	Upload(ctx context.Context, relPath string, content []byte, contentType string) error
 	Delete(ctx context.Context, relPath string) error
-	Repo() string
-	BaseURL() string
 }
 
 // Client wraps jfrog-client-go with rate limiting and retries.
@@ -153,9 +151,6 @@ func NewClient(creds *auth.Credentials) (*Client, error) {
 		retry:      newRetryLogic(creds.MaxRetries, creds.TimeoutSeconds),
 	}, nil
 }
-
-func (c *Client) Repo() string    { return c.repo }
-func (c *Client) BaseURL() string { return c.baseURL }
 
 func (c *Client) repoPath(rel string) string {
 	rel = strings.TrimLeft(rel, "/")
@@ -363,8 +358,8 @@ func (c *Client) Delete(ctx context.Context, relPath string) error {
 	return nil
 }
 
-// SetProperties sets item properties via the Artifactory metadata API.
-func (c *Client) SetProperties(ctx context.Context, relPath string, props map[string]string) error {
+// setProperties sets item properties via the Artifactory metadata API.
+func (c *Client) setProperties(ctx context.Context, relPath string, props map[string]string) error {
 	parts := make([]string, 0, len(props))
 	for k, v := range props {
 		parts = append(parts, k+"="+v)
@@ -384,7 +379,7 @@ func (c *Client) SetProperties(ctx context.Context, relPath string, props map[st
 			return fmt.Errorf("set properties failed: %s", resp.Status)
 		}
 		return nil
-	}, "SetProperties")
+	}, "setProperties")
 }
 
 // MarshalIndent is a helper for JSON uploads.

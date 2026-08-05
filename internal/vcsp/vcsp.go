@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	Version        = 2
-	DateTimeFormat = "2006-01-02T15:04Z"
+	vcspVersion    = 2
+	dateTimeFormat = "2006-01-02T15:04Z"
 	LibFile        = "lib.json"
 	ItemsFile      = "items.json"
 	ItemFile       = "item.json"
-	MaxNameLength  = 80
+	maxNameLength  = 80
 	FileExtCert    = ".cert"
 )
 
@@ -40,8 +40,8 @@ type FileInfo struct {
 	Hrefs         []string `json:"hrefs"`
 }
 
-// MetadataEntry is OVF type-metadata.
-type MetadataEntry struct {
+// metadataEntry is OVF type-metadata.
+type metadataEntry struct {
 	Key        string `json:"key"`
 	Value      string `json:"value"`
 	Type       string `json:"type"`
@@ -61,7 +61,7 @@ type Item struct {
 	Properties     map[string]any  `json:"properties"`
 	SelfHref       string          `json:"selfHref"`
 	Type           Type            `json:"type"`
-	Metadata       []MetadataEntry `json:"metadata,omitempty"`
+	Metadata       []metadataEntry `json:"metadata,omitempty"`
 }
 
 // Library is the lib.json structure.
@@ -93,12 +93,12 @@ func MakeLib(name string, libID string, creation time.Time, version int) Library
 		version = 1
 	}
 	return Library{
-		VcspVersion:    fmt.Sprintf("%d", Version),
+		VcspVersion:    fmt.Sprintf("%d", vcspVersion),
 		Version:        fmt.Sprintf("%d", version),
 		ContentVersion: "1",
 		Name:           name,
 		ID:             NormalizeItemID(libID),
-		Created:        creation.UTC().Format(DateTimeFormat),
+		Created:        creation.UTC().Format(dateTimeFormat),
 		Capabilities: map[string]any{
 			"transferIn":  []string{"httpGet"},
 			"transferOut": []string{"httpGet"},
@@ -107,20 +107,20 @@ func MakeLib(name string, libID string, creation time.Time, version int) Library
 	}
 }
 
-// TruncateName truncates a name preserving extension.
-func TruncateName(name string) string {
-	if len(name) <= MaxNameLength {
+// truncateName truncates a name preserving extension.
+func truncateName(name string) string {
+	if len(name) <= maxNameLength {
 		return name
 	}
 	if idx := strings.LastIndex(name, "."); idx > 0 {
 		ext := name[idx+1:]
-		baseLen := MaxNameLength - len(ext) - 1
+		baseLen := maxNameLength - len(ext) - 1
 		if baseLen < 1 {
-			return name[:MaxNameLength]
+			return name[:maxNameLength]
 		}
 		return name[:baseLen] + "." + ext
 	}
-	return name[:MaxNameLength]
+	return name[:maxNameLength]
 }
 
 // NormalizeItemID ensures urn:uuid: prefix.
@@ -132,13 +132,13 @@ func NormalizeItemID(id string) string {
 	return "urn:uuid:" + s
 }
 
-// CreateOVFMetadata builds OVF type-metadata.
-func CreateOVFMetadata(itemID string, version int, libraryID, isVAppTemplate string) MetadataEntry {
+// createOVFMetadata builds OVF type-metadata.
+func createOVFMetadata(itemID string, version int, libraryID, isVAppTemplate string) metadataEntry {
 	value := fmt.Sprintf(
 		`{"id":"%s","version":"%d","libraryIdParent":"%s","isVappTemplate":"%s","vmTemplate":null,"vappTemplate":null,"networks":[],"storagePolicyGroups":null}`,
 		itemID, version, libraryID, isVAppTemplate,
 	)
-	return MetadataEntry{
+	return metadataEntry{
 		Key:        "type-metadata",
 		Value:      value,
 		Type:       "String",
@@ -177,20 +177,20 @@ func MakeItem(directory string, vcspType Type, name string, files []FileInfo, op
 	}
 	itemID := NormalizeItemID(opts.Identifier)
 	item := Item{
-		Created:     opts.Creation.UTC().Format(DateTimeFormat),
+		Created:     opts.Creation.UTC().Format(dateTimeFormat),
 		Description: opts.Description,
 		Version:     fmt.Sprintf("%d", opts.Version),
 		Files:       files,
 		ID:          itemID,
-		Name:        TruncateName(name),
+		Name:        truncateName(name),
 		Properties:  opts.Properties,
 		SelfHref:    quotePath(directory) + "/" + quotePath(ItemFile),
 		Type:        vcspType,
 	}
 
 	if vcspType == TypeOVF {
-		item.Metadata = []MetadataEntry{
-			CreateOVFMetadata(itemID, opts.Version, opts.LibraryID, opts.IsVAppTemplate),
+		item.Metadata = []metadataEntry{
+			createOVFMetadata(itemID, opts.Version, opts.LibraryID, opts.IsVAppTemplate),
 		}
 	}
 	return item
@@ -230,5 +230,5 @@ func StripURN(id string) string {
 
 // ParseCreated parses a VCSP datetime.
 func ParseCreated(s string) (time.Time, error) {
-	return time.Parse(DateTimeFormat, s)
+	return time.Parse(dateTimeFormat, s)
 }

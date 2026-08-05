@@ -20,21 +20,6 @@ func TestMakeLibDefaults(t *testing.T) {
 	}
 }
 
-func TestTruncateName(t *testing.T) {
-	if vcsp.TruncateName("short") != "short" {
-		t.Fatal("short")
-	}
-	long := strings.Repeat("a", 100) + ".ovf"
-	got := vcsp.TruncateName(long)
-	if len(got) != vcsp.MaxNameLength || !strings.HasSuffix(got, ".ovf") {
-		t.Fatalf("%q len=%d", got, len(got))
-	}
-	got2 := vcsp.TruncateName(strings.Repeat("b", 100))
-	if len(got2) != vcsp.MaxNameLength {
-		t.Fatal(got2)
-	}
-}
-
 func TestNormalizeItemID(t *testing.T) {
 	if vcsp.NormalizeItemID("urn:uuid:abc") != "urn:uuid:abc" {
 		t.Fatal()

@@ -110,8 +110,16 @@ func TestValidateRejectsMultipleAuthMethods(t *testing.T) {
 }
 
 func TestPlaintextSecretWarnings(t *testing.T) {
-	raw := "libraries:\n  - name: x\n    artifactory:\n      auth:\n        password: hunter2\n        token: ${ARTIFACTORY_TOKEN}\n"
-	warnings := config.PlaintextSecretWarnings(raw)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "secrets.yaml")
+	raw := "libraries:\n  - name: x\n    path: /\n    artifactory:\n      url: https://example.com/artifactory\n      repo: repo\n      auth:\n        password: hunter2\n        token: ${ARTIFACTORY_TOKEN}\n"
+	if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, warnings, err := config.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(warnings) != 1 {
 		t.Fatalf("warnings=%v", warnings)
 	}
