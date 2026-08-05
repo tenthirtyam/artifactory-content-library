@@ -12,13 +12,19 @@ import (
 type Method string
 
 const (
+	// MethodAPIKey authenticates with an Artifactory API key.
 	MethodAPIKey Method = "api_key"
-	MethodBasic  Method = "basic"
-	MethodToken  Method = "token"
+	// MethodBasic authenticates with username and password.
+	MethodBasic Method = "basic"
+	// MethodToken authenticates with an access token.
+	MethodToken Method = "token"
 
-	DefaultRateLimit      = 10
+	// DefaultRateLimit is the default Artifactory API calls allowed per second.
+	DefaultRateLimit = 10
+	// DefaultTimeoutSeconds is the default Artifactory HTTP timeout.
 	DefaultTimeoutSeconds = 30
-	DefaultMaxRetries     = 3
+	// DefaultMaxRetries is the default number of Artifactory request retries.
+	DefaultMaxRetries = 3
 )
 
 // Credentials holds Artifactory connection settings.

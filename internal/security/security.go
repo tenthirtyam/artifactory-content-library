@@ -35,10 +35,12 @@ type validationError struct {
 	message string
 }
 
+// Error implements the error interface.
 func (e *validationError) Error() string {
 	return fmt.Sprintf("Security validation failed: %s", e.message)
 }
 
+// NewError returns a security validation error with the given message.
 func NewError(msg string) error {
 	return &validationError{message: msg}
 }

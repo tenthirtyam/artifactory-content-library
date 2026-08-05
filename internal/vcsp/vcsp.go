@@ -15,19 +15,28 @@ import (
 const (
 	vcspVersion    = 2
 	dateTimeFormat = "2006-01-02T15:04Z"
-	LibFile        = "lib.json"
-	ItemsFile      = "items.json"
-	ItemFile       = "item.json"
 	maxNameLength  = 80
-	FileExtCert    = ".cert"
+
+	// LibFile is the library descriptor filename (lib.json).
+	LibFile = "lib.json"
+	// ItemsFile is the items collection filename (items.json).
+	ItemsFile = "items.json"
+	// ItemFile is the per-item descriptor filename (item.json).
+	ItemFile = "item.json"
+	// FileExtCert is the OVF signing certificate extension.
+	FileExtCert = ".cert"
 )
 
 // Type is a VCSP content type.
 type Type string
 
+// VCSP type identifiers for library items.
 const (
-	TypeOVF   Type = "vcsp.ovf"
-	TypeISO   Type = "vcsp.iso"
+	// TypeOVF is an OVF/OVA content library item.
+	TypeOVF Type = "vcsp.ovf"
+	// TypeISO is an ISO content library item.
+	TypeISO Type = "vcsp.iso"
+	// TypeOther is a non-OVF, non-ISO content library item.
 	TypeOther Type = "vcsp.other"
 )
 
