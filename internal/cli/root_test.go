@@ -36,12 +36,28 @@ func execRoot(t *testing.T, args ...string) (string, error) {
 }
 
 func TestSetVersionAndFlag(t *testing.T) {
-	SetVersion("1.2.3", "abc", "2026-01-01")
+	SetVersion("1.2.3", "abc", "2026-01-01T15:04:05Z")
 	out, err := execRoot(t, "--version")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out, "1.2.3") {
+	want := "artifactory-content-library version 1.2.3 (2026-01-01)\n" +
+		"https://github.com/tenthirtyam/artifactory-content-library/releases/tag/v1.2.3\n"
+	if out != want {
+		t.Fatalf("version output:\n got %q\nwant %q", out, want)
+	}
+}
+
+func TestVersionOutputDevHasNoReleaseURL(t *testing.T) {
+	SetVersion("dev", "none", "unknown")
+	out, err := execRoot(t, "--version")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out, "https://") {
+		t.Fatalf("dev version should not include release URL: %q", out)
+	}
+	if !strings.Contains(out, "version dev (unknown)") {
 		t.Fatalf("version output: %q", out)
 	}
 }
