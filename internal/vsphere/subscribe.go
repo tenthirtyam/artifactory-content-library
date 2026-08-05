@@ -22,16 +22,16 @@ type SubscribeConfig struct {
 	URL                      string
 	Username                 string
 	Password                 string
-	Insecure                 bool
 	Name                     string
 	Datacenter               string
 	Datastore                string
-	AutoSync                 bool
-	OnDemand                 bool
 	PublisherSubscriptionURL string
 	PublisherSSLThumbprint   string
 	PublisherUsername        string
 	PublisherPassword        string
+	Insecure                 bool
+	AutoSync                 bool
+	OnDemand                 bool
 }
 
 // CreateSubscribedLibrary creates a subscribed content library using govmomi.
