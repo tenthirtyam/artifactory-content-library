@@ -120,15 +120,15 @@ func newIntegrationClient(t *testing.T) *artifactory.Client {
 	return client
 }
 
-func downloadJSON[T any](ctx context.Context, t *testing.T, client artifactory.StorageClient, path string) T {
+func downloadJSON[T any](ctx context.Context, t *testing.T, client artifactory.StorageClient, relPath string) T {
 	t.Helper()
-	data, err := client.Download(ctx, path)
+	data, err := client.Download(ctx, relPath)
 	if err != nil {
-		t.Fatalf("download %s: %v", path, err)
+		t.Fatalf("download %s: %v", relPath, err)
 	}
 	var out T
 	if err := json.Unmarshal(data, &out); err != nil {
-		t.Fatalf("unmarshal %s: %v\n%s", path, err, string(data))
+		t.Fatalf("unmarshal %s: %v\n%s", relPath, err, string(data))
 	}
 	return out
 }
@@ -262,9 +262,9 @@ func TestIntegrationISONested(t *testing.T) {
 
 	// Nested container tree: leaf folders with one ISO each become library items.
 	for _, rel := range integrationISONestedPaths {
-		path := integrationISONestedBasePath + "/" + rel
-		if err := client.Upload(ctx, path, []byte("integration-iso-nested-"+rel+"\n"), "application/octet-stream"); err != nil {
-			t.Fatalf("upload %s: %v", path, err)
+		objectPath := integrationISONestedBasePath + "/" + rel
+		if err := client.Upload(ctx, objectPath, []byte("integration-iso-nested-"+rel+"\n"), "application/octet-stream"); err != nil {
+			t.Fatalf("upload %s: %v", objectPath, err)
 		}
 	}
 
@@ -297,9 +297,9 @@ func TestIntegrationISOFlat(t *testing.T) {
 
 	// Flat: one top-level folder per ISO (folder name = display name).
 	for _, name := range integrationISONames {
-		path := integrationISOFlatBasePath + "/" + name + "/" + name + ".iso"
-		if err := client.Upload(ctx, path, []byte("integration-iso-flat-"+name+"\n"), "application/octet-stream"); err != nil {
-			t.Fatalf("upload %s: %v", path, err)
+		objectPath := integrationISOFlatBasePath + "/" + name + "/" + name + ".iso"
+		if err := client.Upload(ctx, objectPath, []byte("integration-iso-flat-"+name+"\n"), "application/octet-stream"); err != nil {
+			t.Fatalf("upload %s: %v", objectPath, err)
 		}
 	}
 
@@ -318,9 +318,9 @@ func TestIntegrationOVFFlat(t *testing.T) {
 	// Docs layout: OVF packages (descriptor + disk + mf) and single-file OVAs.
 	for folder, files := range integrationOVFFlatUploads {
 		for _, file := range files {
-			path := integrationOVFFlatBasePath + "/" + folder + "/" + file
-			if err := client.Upload(ctx, path, []byte("integration-ovf-flat-"+file+"\n"), "application/octet-stream"); err != nil {
-				t.Fatalf("upload %s: %v", path, err)
+			objectPath := integrationOVFFlatBasePath + "/" + folder + "/" + file
+			if err := client.Upload(ctx, objectPath, []byte("integration-ovf-flat-"+file+"\n"), "application/octet-stream"); err != nil {
+				t.Fatalf("upload %s: %v", objectPath, err)
 			}
 		}
 	}
@@ -379,9 +379,9 @@ func TestIntegrationCombined(t *testing.T) {
 	// One library: nested ISO catalog + OVF/OVA packages under ovf/ with distinct
 	// display names (vSphere rejects duplicate item names in a library).
 	for _, rel := range integrationISONestedPaths {
-		path := integrationCombinedBasePath + "/" + rel
-		if err := client.Upload(ctx, path, []byte("integration-combined-"+rel+"\n"), "application/octet-stream"); err != nil {
-			t.Fatalf("upload %s: %v", path, err)
+		objectPath := integrationCombinedBasePath + "/" + rel
+		if err := client.Upload(ctx, objectPath, []byte("integration-combined-"+rel+"\n"), "application/octet-stream"); err != nil {
+			t.Fatalf("upload %s: %v", objectPath, err)
 		}
 	}
 	// Folder suffix (-ovf/-ova) keeps display names unique vs nested ISO basenames.
@@ -405,17 +405,17 @@ func TestIntegrationCombined(t *testing.T) {
 	}
 	for folder, files := range combinedOVF {
 		for _, file := range files {
-			path := integrationCombinedBasePath + "/" + folder + "/" + file
-			if err := client.Upload(ctx, path, []byte("integration-combined-"+file+"\n"), "application/octet-stream"); err != nil {
-				t.Fatalf("upload %s: %v", path, err)
+			objectPath := integrationCombinedBasePath + "/" + folder + "/" + file
+			if err := client.Upload(ctx, objectPath, []byte("integration-combined-"+file+"\n"), "application/octet-stream"); err != nil {
+				t.Fatalf("upload %s: %v", objectPath, err)
 			}
 		}
 	}
 	flatISOs := []string{"media-tools", "drivers"}
 	for _, name := range flatISOs {
-		path := integrationCombinedBasePath + "/" + name + "/" + name + ".iso"
-		if err := client.Upload(ctx, path, []byte("integration-combined-"+name+"\n"), "application/octet-stream"); err != nil {
-			t.Fatalf("upload %s: %v", path, err)
+		objectPath := integrationCombinedBasePath + "/" + name + "/" + name + ".iso"
+		if err := client.Upload(ctx, objectPath, []byte("integration-combined-"+name+"\n"), "application/octet-stream"); err != nil {
+			t.Fatalf("upload %s: %v", objectPath, err)
 		}
 	}
 
