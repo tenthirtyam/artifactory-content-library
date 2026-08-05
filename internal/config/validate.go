@@ -121,7 +121,7 @@ var secretKeys = []string{"api_key", "password", "token", "publisher_password"}
 // PlaintextSecretWarnings scans raw YAML (before env expansion) for embedded secrets.
 func PlaintextSecretWarnings(raw string) []string {
 	var warnings []string
-	for _, line := range strings.Split(raw, "\n") {
+	for line := range strings.SplitSeq(raw, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
 			continue
