@@ -115,10 +115,7 @@ func MaskSensitive(data string, visibleChars int) string {
 	}
 	maskChar := "*"
 	if data == "" || len(data) <= visibleChars {
-		n := len(data)
-		if n < 8 {
-			n = 8
-		}
+		n := max(len(data), 8)
 		return strings.Repeat(maskChar, n)
 	}
 	if len(data) <= visibleChars*2 {
