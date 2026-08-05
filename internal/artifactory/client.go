@@ -257,7 +257,7 @@ func (c *Client) Download(ctx context.Context, relPath string) ([]byte, error) {
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode >= 300 {
 			return fmt.Errorf("download failed: %s", resp.Status)
 		}
@@ -320,7 +320,7 @@ func (c *Client) Upload(ctx context.Context, relPath string, content []byte, con
 		if err2 != nil {
 			return err2
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode >= 300 {
 			return fmt.Errorf("upload failed: %s", resp.Status)
 		}
@@ -344,7 +344,7 @@ func (c *Client) Delete(ctx context.Context, relPath string) error {
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode >= 300 {
 			return fmt.Errorf("delete failed: %s", resp.Status)
 		}
@@ -374,7 +374,7 @@ func (c *Client) setProperties(ctx context.Context, relPath string, props map[st
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode >= 300 {
 			return fmt.Errorf("set properties failed: %s", resp.Status)
 		}
