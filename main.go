@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 package main
 
 import "github.com/tenthirtyam/artifactory-content-library/internal/cli"
