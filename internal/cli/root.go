@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,81 +20,41 @@ import (
 	"github.com/tenthirtyam/artifactory-content-library/internal/vsphere"
 )
 
-const releaseURLBase = "https://github.com/tenthirtyam/artifactory-content-library/releases/tag/"
-
 // Build metadata injected via ldflags / SetVersion.
-var (
-	buildVersion = "dev"
-	buildDate    = "unknown"
-)
+var buildVersion = "dev"
 
 // SetVersion records release metadata for --version output.
-// commit is accepted for compatibility with build ldflags but is not shown.
-func SetVersion(version, commit, date string) {
-	_ = commit
+// When version is still the GoReleaser placeholder (dev), runtime/debug.BuildInfo
+// is used so `go install ...@vX.Y.Z` reports the installed module version.
+func SetVersion(version string) {
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		version = applyBuildInfo(version, bi)
+	}
 	if version != "" {
 		buildVersion = version
 	}
-	if date != "" {
-		buildDate = date
-	}
 }
 
-// versionOutput formats --version as:
-//
-//	artifactory-content-library version 1.2.3 (2026-01-01)
-//	https://github.com/tenthirtyam/artifactory-content-library/releases/tag/v1.2.3
-func versionOutput() string {
-	line := fmt.Sprintf("%s (%s)", displayVersion(buildVersion), formatVersionDate(buildDate))
-	if tag := releaseTag(buildVersion); tag != "" {
-		return line + "\n" + releaseURLBase + tag
+// applyBuildInfo fills the unset ldflag placeholder from module build metadata.
+func applyBuildInfo(version string, bi *debug.BuildInfo) string {
+	if bi == nil {
+		return version
 	}
-	return line
+	if version == "" || version == "dev" {
+		if v := strings.TrimSpace(bi.Main.Version); v != "" && v != "(devel)" {
+			return v
+		}
+	}
+	return version
+}
+
+// versionOutput is the bare version string shown after the command name.
+func versionOutput() string {
+	return displayVersion(buildVersion)
 }
 
 func displayVersion(v string) string {
 	return strings.TrimPrefix(strings.TrimSpace(v), "v")
-}
-
-func formatVersionDate(raw string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" || raw == "unknown" {
-		return "unknown"
-	}
-	for _, layout := range []string{
-		time.RFC3339,
-		"2006-01-02T15:04:05Z",
-		"2006-01-02 15:04:05",
-		"2006-01-02",
-	} {
-		if t, err := time.Parse(layout, raw); err == nil {
-			return t.Format("2006-01-02")
-		}
-	}
-	if len(raw) >= 10 && raw[4] == '-' && raw[7] == '-' {
-		return raw[:10]
-	}
-	return raw
-}
-
-func releaseTag(v string) string {
-	v = strings.TrimSpace(v)
-	if v == "" || v == "dev" || v == "none" {
-		return ""
-	}
-	// Skip dirty / describe suffixes from local builds (e.g. v1.0.0-3-gabcd-dirty).
-	if strings.Contains(v, "-g") || strings.HasSuffix(v, "-dirty") {
-		return ""
-	}
-	if !strings.HasPrefix(v, "v") {
-		v = "v" + v
-	}
-	// Require vMAJOR.MINOR style so plain git SHAs are not linked.
-	rest := strings.TrimPrefix(v, "v")
-	if rest == "" || rest[0] < '0' || rest[0] > '9' || !strings.Contains(rest, ".") {
-		return ""
-	}
-	return v
 }
 
 // newRootCommand builds the artifactory-content-library CLI.
@@ -106,6 +66,7 @@ func newRootCommand() *cobra.Command {
 		Version:      versionOutput(),
 		SilenceUsage: true,
 	}
+	root.SetVersionTemplate("{{printf \"%s %s\\n\" .Name .Version}}")
 
 	root.PersistentFlags().String("log-format", "standard", "Logging format: standard or structured")
 	root.PersistentFlags().String("log-level", "info", "Logging level: debug, info, warning, error")

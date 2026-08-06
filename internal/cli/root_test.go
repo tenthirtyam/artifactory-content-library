@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
-	"strings"
+	"runtime/debug"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -38,29 +38,43 @@ func execRoot(t *testing.T, args ...string) (string, error) {
 }
 
 func TestSetVersionAndFlag(t *testing.T) {
-	SetVersion("1.2.3", "abc", "2026-01-01T15:04:05Z")
+	SetVersion("1.2.3")
 	out, err := execRoot(t, "--version")
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "artifactory-content-library version 1.2.3 (2026-01-01)\n" +
-		"https://github.com/tenthirtyam/artifactory-content-library/releases/tag/v1.2.3\n"
+	want := "artifactory-content-library 1.2.3\n"
 	if out != want {
 		t.Fatalf("version output:\n got %q\nwant %q", out, want)
 	}
 }
 
-func TestVersionOutputDevHasNoReleaseURL(t *testing.T) {
-	SetVersion("dev", "none", "unknown")
+func TestVersionOutputDev(t *testing.T) {
+	SetVersion("dev")
 	out, err := execRoot(t, "--version")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(out, "https://") {
-		t.Fatalf("dev version should not include release URL: %q", out)
-	}
-	if !strings.Contains(out, "version dev (unknown)") {
+	if out != "artifactory-content-library dev\n" {
 		t.Fatalf("version output: %q", out)
+	}
+}
+
+func TestApplyBuildInfo(t *testing.T) {
+	t.Parallel()
+	bi := &debug.BuildInfo{
+		Main: debug.Module{Version: "v0.1.0"},
+	}
+	if got := applyBuildInfo("dev", bi); got != "v0.1.0" {
+		t.Fatalf("got %q", got)
+	}
+	// ldflags win over build info
+	if got := applyBuildInfo("1.2.3", bi); got != "1.2.3" {
+		t.Fatalf("ldflags should win: got %q", got)
+	}
+	// local/devel builds keep placeholders for version
+	if got := applyBuildInfo("dev", &debug.BuildInfo{Main: debug.Module{Version: "(devel)"}}); got != "dev" {
+		t.Fatalf("devel should stay dev: %q", got)
 	}
 }
 

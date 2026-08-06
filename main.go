@@ -5,14 +5,11 @@ package main
 
 import "github.com/tenthirtyam/artifactory-content-library/internal/cli"
 
-// Set by GoReleaser via ldflags.
-var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
-)
+// Set by GoReleaser via ldflags. When left as "dev", SetVersion falls back to
+// runtime/debug.BuildInfo (e.g. go install ...@v0.1.0).
+var version = "dev"
 
 func main() {
-	cli.SetVersion(version, commit, date)
+	cli.SetVersion(version)
 	cli.Execute()
 }
