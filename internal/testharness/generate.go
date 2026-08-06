@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: Copyright 2026 Ryan Johnson
 
 // Package testharness provides filesystem VCSP metadata generation for unit tests.
 // It is not part of the public CLI or configuration surface.
