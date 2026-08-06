@@ -55,7 +55,7 @@ artifactory-content-library init --type artifactory --output config.yaml
 Example:
 
 ```yaml
---8<-- "example/configuration/example-artifactory-config.yaml"
+--8<-- "docs/snippets/example-artifactory-config.yaml"
 ```
 
 ```bash

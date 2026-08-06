@@ -1,10 +1,9 @@
-# yaml-language-server: $schema=../../schema/config.schema.json
-# vSphere Content Library Configuration - Artifactory Storage
-
+# yaml-language-server: $schema=https://raw.githubusercontent.com/tenthirtyam/artifactory-content-library/main/schema/config.schema.json
+---
 libraries:
   - name: example
     type: artifactory
-    path: path/to/repository/content
+    path: path/to/content
     artifactory:
       url: https://packages.example.com/artifactory
       repo: example
@@ -13,11 +12,12 @@ libraries:
       timeout_seconds: 30
       max_retries: 3
       auth:
-        api_key: ${ARTIFACTORY_API_KEY}
-        # OR use basic authentication:
+        # Use Basic Authentication:
         # username: ${ARTIFACTORY_USERNAME}
         # password: ${ARTIFACTORY_PASSWORD}
-        # OR use token:
+        # Or Use API Key:
+        # api_key: ${ARTIFACTORY_API_KEY}
+        # Or Use Access Token:
         # token: ${ARTIFACTORY_TOKEN}
 
 logging:

@@ -63,7 +63,7 @@ artifactory-content-library init --type subscribe --output subscribe.yaml
 Example:
 
 ```yaml
---8<-- "example/configuration/example-subscribe-config.yaml"
+--8<-- "docs/snippets/example-subscribe-config.yaml"
 ```
 
 ```bash

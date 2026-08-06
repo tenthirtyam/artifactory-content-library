@@ -17,13 +17,13 @@ Prefer `${ENV}` references for secrets; plaintext secret values produce a warnin
 Artifactory (`generate`):
 
 ```yaml
---8<-- "example/configuration/example-artifactory-config.yaml"
+--8<-- "docs/snippets/example-artifactory-config.yaml"
 ```
 
 Subscribe (`subscribe`):
 
 ```yaml
---8<-- "example/configuration/example-subscribe-config.yaml"
+--8<-- "docs/snippets/example-subscribe-config.yaml"
 ```
 
 ## Schema

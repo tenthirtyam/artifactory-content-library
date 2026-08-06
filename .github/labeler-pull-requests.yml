@@ -19,7 +19,6 @@ documentation:
       - any-glob-to-any-file:
           - "**/*.md"
           - "docs/**/*"
-          - "example/**/*"
           - "LICENSE"
           - "NOTICE.md"
 github-actions:

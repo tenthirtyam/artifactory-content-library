@@ -1,11 +1,5 @@
-# yaml-language-server: $schema=../../schema/config.schema.json
-# Example configuration for creating a subscribed content library
-#
-# Usage:
-#   artifactory-content-library subscribe --config example/configuration/example-subscribe-config.yaml
-#
-# Prefer environment variables for secrets in real deployments.
-
+# yaml-language-server: $schema=https://raw.githubusercontent.com/tenthirtyam/artifactory-content-library/main/schema/config.schema.json
+---
 vsphere:
   url: ${VSPHERE_URL}
   username: ${VSPHERE_USERNAME}
@@ -13,7 +7,7 @@ vsphere:
   ssl_verify: true
 
 library:
-  name: My Subscribed Library
+  name: Artifactory Subscribed Library
   datacenter: dc01
   datastore: ds01
   auto_sync: true
