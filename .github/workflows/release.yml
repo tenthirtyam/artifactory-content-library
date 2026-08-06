@@ -40,6 +40,7 @@ jobs:
         env:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
 
   deploy-docs:
     name: Deploy Documentation

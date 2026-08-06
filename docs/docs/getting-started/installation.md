@@ -4,17 +4,10 @@ icon: octicons/download-16
 
 # Installation
 
-## Build from Source
+## Homebrew
 
 ```bash
-git clone https://github.com/tenthirtyam/artifactory-content-library.git
-cd artifactory-content-library
-
-make build
-
-# Or...
-
-go build -o artifactory-content-library .
+brew install tenthirtyam/tap/artifactory-content-library
 ```
 
 ## Install from Source

@@ -76,3 +76,18 @@ release:
 
 snapshot:
   version_template: "{{ .Tag }}-next"
+
+brews:
+  - name: artifactory-content-library
+    repository:
+      owner: tenthirtyam
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/tenthirtyam/artifactory-content-library"
+    description: "Generate vSphere content library metadata for JFrog Artifactory"
+    license: "MIT"
+    skip_upload: auto
+    test: |
+      assert_match version.to_s, shell_output("#{bin}/artifactory-content-library --version")
+
