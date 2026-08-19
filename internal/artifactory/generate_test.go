@@ -4,8 +4,10 @@
 package artifactory_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"slices"
 	"strings"
 	"sync"
@@ -21,6 +23,26 @@ type mockStorage struct {
 	dirs    map[string][]artifactory.ChildItem
 	meta    map[string]*artifactory.FileMeta
 	deleted []string
+	uploads []string
+}
+
+func (m *mockStorage) snapshotUploads() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]string(nil), m.uploads...)
+}
+
+func (m *mockStorage) snapshotDeleted() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]string(nil), m.deleted...)
+}
+
+func (m *mockStorage) resetWrites() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.uploads = nil
+	m.deleted = nil
 }
 
 func newMock() *mockStorage {
@@ -66,6 +88,7 @@ func (m *mockStorage) Upload(_ context.Context, p string, content []byte, _ stri
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.files[p] = content
+	m.uploads = append(m.uploads, p)
 	return nil
 }
 
@@ -148,6 +171,7 @@ func TestGenerateIdempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 	first := libVersion(t, m)
+	m.resetWrites()
 
 	if err := artifactory.Generate(ctx, m, "ArtLib", "", true); err != nil {
 		t.Fatal(err)
@@ -155,6 +179,12 @@ func TestGenerateIdempotent(t *testing.T) {
 	second := libVersion(t, m)
 	if first != second {
 		t.Fatalf("expected unchanged version; got %q then %q", first, second)
+	}
+	if uploads := m.snapshotUploads(); len(uploads) != 0 {
+		t.Fatalf("expected no uploads on unchanged re-run; got %v", uploads)
+	}
+	if deleted := m.snapshotDeleted(); len(deleted) != 0 {
+		t.Fatalf("expected no deletes on unchanged re-run; got %v", deleted)
 	}
 }
 
@@ -771,5 +801,217 @@ func TestDirToItemLastModified(t *testing.T) {
 	}
 	if items["ovf"].Files[0].GenerationNum == 0 {
 		t.Fatal("expected generation from LastModified")
+	}
+}
+
+func findChange(changes []artifactory.ItemChange, action, path string) (artifactory.ItemChange, bool) {
+	for _, c := range changes {
+		if c.Action == action && c.Path == path {
+			return c, true
+		}
+	}
+	return artifactory.ItemChange{}, false
+}
+
+func TestGenerateDryRunFirstCreate(t *testing.T) {
+	m := newMock()
+	seedISOItem(m, "item1", "disk.iso", "sha1")
+
+	result, err := artifactory.GenerateWithOptions(context.Background(), m, "ArtLib", "", artifactory.GenerateOptions{
+		SkipCert: true,
+		DryRun:   true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == nil {
+		t.Fatal("expected result")
+	}
+	if _, ok := findChange(result.Changes, artifactory.ChangeAdd, "item1"); !ok {
+		t.Fatalf("expected add item1; got %+v", result.Changes)
+	}
+	if _, ok := m.files[vcsp.LibFile]; ok {
+		t.Fatal("dry-run must not write lib.json")
+	}
+	if _, ok := m.files[vcsp.ItemsFile]; ok {
+		t.Fatal("dry-run must not write items.json")
+	}
+	if _, ok := m.files["item1/item.json"]; ok {
+		t.Fatal("dry-run must not write item.json")
+	}
+	if uploads := m.snapshotUploads(); len(uploads) != 0 {
+		t.Fatalf("expected no uploads; got %v", uploads)
+	}
+}
+
+func TestGenerateDryRunNoChange(t *testing.T) {
+	m := newMock()
+	seedISOItem(m, "item1", "disk.iso", "sha1")
+	ctx := context.Background()
+	if err := artifactory.Generate(ctx, m, "ArtLib", "", true); err != nil {
+		t.Fatal(err)
+	}
+	version := libVersion(t, m)
+	m.resetWrites()
+
+	result, err := artifactory.GenerateWithOptions(ctx, m, "ArtLib", "", artifactory.GenerateOptions{
+		SkipCert: true,
+		DryRun:   true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Changed {
+		t.Fatal("expected Changed=false")
+	}
+	if len(result.Changes) != 0 {
+		t.Fatalf("expected no changes; got %+v", result.Changes)
+	}
+	if libVersion(t, m) != version {
+		t.Fatalf("version changed: %s", libVersion(t, m))
+	}
+	if uploads := m.snapshotUploads(); len(uploads) != 0 {
+		t.Fatalf("expected no uploads; got %v", uploads)
+	}
+	if deleted := m.snapshotDeleted(); len(deleted) != 0 {
+		t.Fatalf("expected no deletes; got %v", deleted)
+	}
+}
+
+func TestGenerateDryRunChecksumChange(t *testing.T) {
+	m := newMock()
+	seedISOItem(m, "item1", "disk.iso", "sha1-old")
+	ctx := context.Background()
+	if err := artifactory.Generate(ctx, m, "ArtLib", "", true); err != nil {
+		t.Fatal(err)
+	}
+	beforeVer := libVersion(t, m)
+	beforeItem := append([]byte(nil), m.files["item1/item.json"]...)
+	beforeLib := append([]byte(nil), m.files[vcsp.LibFile]...)
+	m.resetWrites()
+
+	m.meta["item1/disk.iso"] = &artifactory.FileMeta{Size: 10, SHA1: "sha1-new", MD5: "md5"}
+	result, err := artifactory.GenerateWithOptions(ctx, m, "ArtLib", "", artifactory.GenerateOptions{
+		SkipCert: true,
+		DryRun:   true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, ok := findChange(result.Changes, artifactory.ChangeUpdate, "item1")
+	if !ok {
+		t.Fatalf("expected change item1; got %+v", result.Changes)
+	}
+	if c.Reason != artifactory.ReasonChecksum {
+		t.Fatalf("reason %q", c.Reason)
+	}
+	if libVersion(t, m) != beforeVer {
+		t.Fatalf("dry-run bumped version to %s", libVersion(t, m))
+	}
+	if string(m.files["item1/item.json"]) != string(beforeItem) {
+		t.Fatal("dry-run rewrote item.json")
+	}
+	if string(m.files[vcsp.LibFile]) != string(beforeLib) {
+		t.Fatal("dry-run rewrote lib.json")
+	}
+	if uploads := m.snapshotUploads(); len(uploads) != 0 {
+		t.Fatalf("expected no uploads; got %v", uploads)
+	}
+}
+
+func TestGenerateDryRunOrphan(t *testing.T) {
+	m := newMock()
+	seedISOItem(m, "item1", "disk.iso", "sha1")
+	ctx := context.Background()
+	if err := artifactory.Generate(ctx, m, "ArtLib", "", true); err != nil {
+		t.Fatal(err)
+	}
+
+	var coll vcsp.ItemsCollection
+	if err := json.Unmarshal(m.files[vcsp.ItemsFile], &coll); err != nil {
+		t.Fatal(err)
+	}
+	orphanPath := "gone%2Fchild/item.json"
+	m.files[orphanPath] = []byte(`{}`)
+	coll.Items = append(coll.Items, vcsp.Item{
+		Name:     "child",
+		Type:     vcsp.TypeISO,
+		Version:  "1",
+		ID:       "urn:uuid:orphan",
+		SelfHref: orphanPath,
+	})
+	data, err := artifactory.MarshalIndent(coll)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.files[vcsp.ItemsFile] = data
+	m.resetWrites()
+
+	result, err := artifactory.GenerateWithOptions(ctx, m, "ArtLib", "", artifactory.GenerateOptions{
+		SkipCert: true,
+		DryRun:   true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := findChange(result.Changes, artifactory.ChangeRemove, "gone/child"); !ok {
+		t.Fatalf("expected remove gone/child; got %+v", result.Changes)
+	}
+	if _, ok := m.files[orphanPath]; !ok {
+		t.Fatal("dry-run must not delete orphan item.json")
+	}
+	if deleted := m.snapshotDeleted(); len(deleted) != 0 {
+		t.Fatalf("expected no deletes; got %v", deleted)
+	}
+}
+
+func TestGenerateLivePartialItemChange(t *testing.T) {
+	m := newMock()
+	seedISOFolder(m, "keep", []string{"keep.iso"}, nil)
+	seedISOFolder(m, "touch", []string{"touch.iso"}, nil)
+	ctx := context.Background()
+	if err := artifactory.Generate(ctx, m, "ArtLib", "", true); err != nil {
+		t.Fatal(err)
+	}
+	m.resetWrites()
+
+	m.meta["touch/touch.iso"] = &artifactory.FileMeta{Size: 10, SHA1: "sha-touch-new", MD5: "md5"}
+	if err := artifactory.Generate(ctx, m, "ArtLib", "", true); err != nil {
+		t.Fatal(err)
+	}
+	uploads := m.snapshotUploads()
+	if !slices.Contains(uploads, "touch/item.json") {
+		t.Fatalf("expected touch/item.json upload; got %v", uploads)
+	}
+	if slices.Contains(uploads, "keep/item.json") {
+		t.Fatalf("did not expect keep/item.json re-upload; got %v", uploads)
+	}
+	if !slices.Contains(uploads, vcsp.LibFile) || !slices.Contains(uploads, vcsp.ItemsFile) {
+		t.Fatalf("expected lib.json and items.json; got %v", uploads)
+	}
+}
+
+func TestGenerateShowChangesLogs(t *testing.T) {
+	m := newMock()
+	seedISOItem(m, "item1", "disk.iso", "sha1")
+	ctx := context.Background()
+	if err := artifactory.Generate(ctx, m, "ArtLib", "", true); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	handler := slog.NewTextHandler(&buf, nil)
+	slog.SetDefault(slog.New(handler))
+
+	_, err := artifactory.GenerateWithOptions(ctx, m, "ArtLib", "", artifactory.GenerateOptions{
+		SkipCert:    true,
+		ShowChanges: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "already up to date") {
+		t.Fatalf("expected up-to-date summary: %q", out)
 	}
 }
