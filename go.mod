@@ -7,7 +7,7 @@ require (
 	github.com/jfrog/jfrog-client-go v1.55.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
-	github.com/vmware/govmomi v0.55.1
+	github.com/vmware/govmomi v0.56.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -68,6 +68,6 @@ require (
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
