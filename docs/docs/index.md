@@ -12,6 +12,7 @@ content library.
 - **Artifactory**: Generate metadata for content stored in JFrog Artifactory.
 - **Content Type Detection**: Automatic detection of OVF, OVA, and ISO content.
 - **Incremental Updates**: Change detection with checksum validation.
+- **Dry Run**: Preview added, removed, and changed items without writing metadata.
 - **Subscribed Library Helper**: Create subscribed content libraries in vSphere with an Artifactory
   repository as the published content library source.
 

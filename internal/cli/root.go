@@ -128,11 +128,15 @@ func addGenerateFlags(cmd *cobra.Command) {
 	cmd.Flags().String("rate-limit", "", "Artifactory requests per second (default 10)")
 	cmd.Flags().String("timeout-seconds", "", "Artifactory HTTP timeout in seconds (default 30)")
 	cmd.Flags().String("max-retries", "", "Artifactory request retries (default 3)")
+	cmd.Flags().Bool("dry-run", false, "Scan and report metadata changes without uploading or deleting")
+	cmd.Flags().Bool("show-changes", false, "Print added, removed, and changed items")
 
 	_ = viper.BindPFlag("config", cmd.Flags().Lookup("config"))
 	_ = viper.BindPFlag("name", cmd.Flags().Lookup("name"))
 	_ = viper.BindPFlag("path", cmd.Flags().Lookup("path"))
 	_ = viper.BindPFlag("skip_cert", cmd.Flags().Lookup("skip-cert"))
+	_ = viper.BindPFlag("dry_run", cmd.Flags().Lookup("dry-run"))
+	_ = viper.BindPFlag("show_changes", cmd.Flags().Lookup("show-changes"))
 }
 
 func newGenerateCmd() *cobra.Command {
@@ -234,7 +238,7 @@ func runGenerate(ctx context.Context) error {
 		return fmt.Errorf("--name is required")
 	}
 
-	return generateOne(ctx, name, path, skipCert, nil)
+	return generateOne(ctx, name, path, skipCert, nil, generateOpts())
 }
 
 func runFromConfig(ctx context.Context, cfgPath string) error {
@@ -275,7 +279,7 @@ func runFromConfig(ctx context.Context, cfgPath string) error {
 	for _, lib := range libs {
 		skipCert := config.BoolVal(lib.SkipCert, config.BoolVal(cfg.Defaults.SkipCert, true))
 
-		if err := generateOne(ctx, lib.Name, lib.Path, skipCert, lib.Artifactory); err != nil {
+		if err := generateOne(ctx, lib.Name, lib.Path, skipCert, lib.Artifactory, generateOpts()); err != nil {
 			logging.Error("Failed to generate content library", "library_name", lib.Name, "error", err)
 			if firstErr == nil {
 				firstErr = err
@@ -287,7 +291,14 @@ func runFromConfig(ctx context.Context, cfgPath string) error {
 	return firstErr
 }
 
-func generateOne(ctx context.Context, name, path string, skipCert bool, artCfg *config.Artifactory) error {
+func generateOpts() artifactory.GenerateOptions {
+	return artifactory.GenerateOptions{
+		DryRun:      viper.GetBool("dry_run"),
+		ShowChanges: viper.GetBool("show_changes"),
+	}
+}
+
+func generateOne(ctx context.Context, name, path string, skipCert bool, artCfg *config.Artifactory, opts artifactory.GenerateOptions) error {
 	creds, err := resolveArtifactoryCreds(artCfg)
 	if err != nil {
 		return err
@@ -296,7 +307,9 @@ func generateOne(ctx context.Context, name, path string, skipCert bool, artCfg *
 	if err != nil {
 		return err
 	}
-	return artifactory.Generate(ctx, client, name, path, skipCert)
+	opts.SkipCert = skipCert
+	_, err = artifactory.GenerateWithOptions(ctx, client, name, path, opts)
+	return err
 }
 
 // applyChangedArtifactoryFlags records only explicitly set generate flags so they
