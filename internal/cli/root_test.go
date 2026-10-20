@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -115,6 +116,18 @@ func TestInitForceAndInvalidType(t *testing.T) {
 func TestGenerateRequiresName(t *testing.T) {
 	if _, err := execRoot(t, "generate"); err == nil {
 		t.Fatal("expected missing name error")
+	}
+}
+
+func TestGenerateHelpIncludesDryRunAndShowChanges(t *testing.T) {
+	out, err := execRoot(t, "generate", "--help")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"--dry-run", "--show-changes"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("help missing %s:\n%s", want, out)
+		}
 	}
 }
 
