@@ -7,7 +7,7 @@ require (
 	github.com/jfrog/jfrog-client-go v1.55.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
-	github.com/vmware/govmomi v0.56.0
+	github.com/vmware/govmomi v0.56.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
