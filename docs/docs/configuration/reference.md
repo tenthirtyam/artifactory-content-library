@@ -51,6 +51,8 @@ artifactory-content-library generate [options]
 | `--rate-limit`      | `int`    | Requests per Second (`rate_limit`)       | `10`    | `ARTIFACTORY_RATE_LIMIT`      |
 | `--timeout-seconds` | `int`    | HTTP Client Timeout in Seconds           | `30`    | `ARTIFACTORY_TIMEOUT_SECONDS` |
 | `--max-retries`     | `int`    | Maximum Retries                          | `3`     | `ARTIFACTORY_MAX_RETRIES`     |
+| `--dry-run`         | `bool`   | Report metadata changes without writing  | `false` | -                             |
+| `--show-changes`    | `bool`   | Print added, removed, and changed items  | `false` | -                             |
 
 ## `subscribe` Command Options
 
