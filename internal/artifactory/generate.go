@@ -257,20 +257,81 @@ func itemStoragePath(it vcsp.Item) string {
 	return it.Name
 }
 
+const (
+	// ChangeAdd is a new library item.
+	ChangeAdd = "add"
+	// ChangeUpdate is an existing item whose files changed.
+	ChangeUpdate = "change"
+	// ChangeRemove is an item whose folder disappeared.
+	ChangeRemove = "remove"
+
+	// ReasonNew is reported for added items.
+	ReasonNew = "new"
+	// ReasonFiles is a change in the item file name set.
+	ReasonFiles = "files"
+	// ReasonChecksum is a checksum (ETag) change on an existing file.
+	ReasonChecksum = "checksum"
+	// ReasonOrphan is a removed item no longer present in storage.
+	ReasonOrphan = "orphan"
+	// ReasonContentVer is a missing item content version on an existing item.
+	ReasonContentVer = "content-version"
+	// ReasonTypeMetadata is an OVF item gaining type-metadata.
+	ReasonTypeMetadata = "type-metadata"
+)
+
+// GenerateOptions controls metadata generation.
+type GenerateOptions struct {
+	// SkipCert omits .cert files from OVF items.
+	SkipCert bool
+	// DryRun compares and reports without uploading or deleting metadata.
+	DryRun bool
+	// ShowChanges logs added, removed, and changed items.
+	ShowChanges bool
+}
+
+// ItemChange is one add, update, or remove relative to existing library metadata.
+type ItemChange struct {
+	Action string // add | change | remove
+	Path   string // library-relative folder
+	Name   string // VCSP display name
+	Reason string // checksum | files | new | orphan | ...
+}
+
+// GenerateResult summarizes what generate did or would do.
+type GenerateResult struct {
+	// Updating is true when lib.json already existed.
+	Updating bool
+	// Changed is true when an existing library needs a version bump.
+	Changed bool
+	// Changes lists items that were or would be added, updated, or removed.
+	Changes []ItemChange
+}
+
 // Generate creates or updates Artifactory content library metadata.
 func Generate(ctx context.Context, client StorageClient, libName, basePath string, skipCert bool) error {
+	_, err := GenerateWithOptions(ctx, client, libName, basePath, GenerateOptions{SkipCert: skipCert})
+	return err
+}
+
+// GenerateWithOptions creates or updates Artifactory content library metadata with dry-run
+// and change-reporting options.
+func GenerateWithOptions(ctx context.Context, client StorageClient, libName, basePath string, opts GenerateOptions) (*GenerateResult, error) {
 	var err error
 	libName, err = security.SanitizeLibraryName(libName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	basePath = strings.Trim(basePath, "/")
 	if strings.Contains(basePath, "..") || strings.Contains(basePath, "\x00") {
-		return security.NewError("base path contains invalid characters")
+		return nil, security.NewError("base path contains invalid characters")
+	}
+
+	if opts.DryRun {
+		opts.ShowChanges = true
 	}
 
 	logging.Audit("Starting content library generation...",
-		"library_name", libName, "base_path", basePath, "skip_cert", skipCert)
+		"library_name", libName, "base_path", basePath, "skip_cert", opts.SkipCert, "dry_run", opts.DryRun)
 
 	libJSONPath := vcsp.LibFile
 	itemsJSONPath := vcsp.ItemsFile
@@ -314,14 +375,16 @@ func Generate(ctx context.Context, client StorageClient, libName, basePath strin
 		}
 	}
 
+	result := &GenerateResult{Updating: updating}
+
 	folders, err := discoverContentFolders(ctx, client, basePath)
 	if err != nil {
 		logging.Error("Failed to discover content folders in Artifactory path", "path", basePath, "error", err)
-		return err
+		return nil, err
 	}
 	if len(folders) == 0 {
 		logging.Info("No content folders found in the specified path", "path", basePath)
-		return nil
+		return result, nil
 	}
 
 	logging.Info(fmt.Sprintf("Processing %d content folders...", len(folders)))
@@ -335,17 +398,28 @@ func Generate(ctx context.Context, client StorageClient, libName, basePath strin
 		if old, ok := oldItems[folder.relPath]; ok {
 			oldPtr = &old
 		}
-		generated, err := DirToItem(ctx, client, folder.absPath, folder.relPath, skipCert, vcsp.NormalizeItemID(libID), oldPtr)
+		generated, err := DirToItem(ctx, client, folder.absPath, folder.relPath, opts.SkipCert, vcsp.NormalizeItemID(libID), oldPtr)
 		if err != nil {
 			logging.Error("Error processing directory", "directory", folder.relPath, "error", err)
 			continue
 		}
 		for itemRelPath, itemJSON := range generated {
 			itemJSON.ContentVersion = "2"
-			if _, exists := oldItems[itemRelPath]; !exists && updating {
-				changed = true
+			writeItem := false
+			if _, exists := oldItems[itemRelPath]; !exists {
+				writeItem = true
+				result.Changes = append(result.Changes, ItemChange{
+					Action: ChangeAdd,
+					Path:   itemRelPath,
+					Name:   itemJSON.Name,
+					Reason: ReasonNew,
+				})
+				if updating {
+					changed = true
+				}
 			} else if old, exists := oldItems[itemRelPath]; exists {
 				fileChanged := false
+				changeReason := ""
 				itemJSON.ID = old.ID
 				itemJSON.Created = old.Created
 				itemJSON.Version = old.Version
@@ -353,15 +427,22 @@ func Generate(ctx context.Context, client StorageClient, libName, basePath strin
 					itemJSON.ContentVersion = old.ContentVersion
 				} else {
 					changed = true
+					writeItem = true
+					changeReason = ReasonContentVer
 				}
 				oldStr := fmt.Sprintf("%v", old)
 				newStr := fmt.Sprintf("%v", itemJSON)
 				if !strings.Contains(oldStr, "type-metadata") && strings.Contains(newStr, "type-metadata") {
 					updateItemsJSON = true
+					writeItem = true
+					if changeReason == "" {
+						changeReason = ReasonTypeMetadata
+					}
 				}
 				if !fileNamesEqual(itemJSON.Files, old.Files) {
 					changed = true
 					fileChanged = true
+					changeReason = ReasonFiles
 				}
 				if !fileChanged {
 					for _, f := range itemJSON.Files {
@@ -369,6 +450,7 @@ func Generate(ctx context.Context, client StorageClient, libName, basePath strin
 							if f.Name == of.Name && f.ETag != of.ETag {
 								changed = true
 								fileChanged = true
+								changeReason = ReasonChecksum
 								break
 							}
 						}
@@ -383,6 +465,15 @@ func Generate(ctx context.Context, client StorageClient, libName, basePath strin
 					_, _ = fmt.Sscanf(itemJSON.ContentVersion, "%d", &cv)
 					itemJSON.Version = fmt.Sprintf("%d", v+1)
 					itemJSON.ContentVersion = fmt.Sprintf("%d", cv+1)
+					writeItem = true
+				}
+				if writeItem {
+					result.Changes = append(result.Changes, ItemChange{
+						Action: ChangeUpdate,
+						Path:   itemRelPath,
+						Name:   itemJSON.Name,
+						Reason: changeReason,
+					})
 				}
 				delete(oldItems, itemRelPath)
 			}
@@ -391,12 +482,14 @@ func Generate(ctx context.Context, client StorageClient, libName, basePath strin
 			if basePath != "" {
 				itemJSONPath = basePath + "/" + itemJSONPath
 			}
-			data, err := MarshalIndent(itemJSON)
-			if err != nil {
-				return err
-			}
-			if err := client.Upload(ctx, itemJSONPath, data, "application/json; charset=utf-8"); err != nil {
-				logging.Error("Failed to upload item metadata", "path", itemJSONPath)
+			if writeItem && !opts.DryRun {
+				data, err := MarshalIndent(itemJSON)
+				if err != nil {
+					return nil, err
+				}
+				if err := client.Upload(ctx, itemJSONPath, data, "application/json; charset=utf-8"); err != nil {
+					logging.Error("Failed to upload item metadata", "path", itemJSONPath)
+				}
 			}
 			items = append(items, itemJSON)
 		}
@@ -405,7 +498,7 @@ func Generate(ctx context.Context, client StorageClient, libName, basePath strin
 	seenNames := map[string]string{}
 	for _, it := range items {
 		if prev, ok := seenNames[it.Name]; ok {
-			return fmt.Errorf("duplicate display name %q for items %q and %q; vSphere requires unique item names within a library",
+			return nil, fmt.Errorf("duplicate display name %q for items %q and %q; vSphere requires unique item names within a library",
 				it.Name, prev, itemStoragePath(it))
 		}
 		seenNames[it.Name] = itemStoragePath(it)
@@ -415,6 +508,13 @@ func Generate(ctx context.Context, client StorageClient, libName, basePath strin
 		changed = true
 		logging.Info("Removing orphaned items from content library..", "removed_count", len(oldItems))
 		for _, old := range oldItems {
+			rel := itemStoragePath(old)
+			result.Changes = append(result.Changes, ItemChange{
+				Action: ChangeRemove,
+				Path:   rel,
+				Name:   old.Name,
+				Reason: ReasonOrphan,
+			})
 			orphaned := old.SelfHref
 			if orphaned == "" && old.Type == vcsp.TypeISO {
 				// Legacy nested ISO items stored item.json under folder/basename.
@@ -427,20 +527,36 @@ func Generate(ctx context.Context, client StorageClient, libName, basePath strin
 			if basePath != "" {
 				orphaned = basePath + "/" + orphaned
 			}
+			if opts.DryRun {
+				continue
+			}
 			if ok, _ := client.FileExists(ctx, orphaned); ok {
 				_ = client.Delete(ctx, orphaned)
 			}
 		}
 	}
 
+	result.Changed = changed
+	summaryVersion := libVersion
+
 	if updating && !changed {
-		logging.Info("Content library is already up to date.", "status", "up_to_date")
-		if updateItemsJSON {
+		if opts.ShowChanges {
+			logChangeSummary(libName, updating, changed, opts.DryRun, summaryVersion, result.Changes)
+		} else {
+			logging.Info("Content library is already up to date.", "status", "up_to_date")
+		}
+		if updateItemsJSON && !opts.DryRun {
 			data, _ := MarshalIndent(vcsp.MakeItems(items))
 			_ = client.Upload(ctx, itemsJSONPath, data, "application/json; charset=utf-8")
 		}
-		return nil
+		return result, nil
 	}
+
+	if opts.DryRun {
+		logChangeSummary(libName, updating, changed, true, summaryVersion, result.Changes)
+		return result, nil
+	}
+
 	if changed {
 		libVersion++
 	}
@@ -448,19 +564,72 @@ func Generate(ctx context.Context, client StorageClient, libName, basePath strin
 	logging.Info("Saving content library metadata...", "lib_file", libJSONPath, "items_file", itemsJSONPath)
 	libData, err := MarshalIndent(vcsp.MakeLib(libName, libID, libCreate, libVersion))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	itemsData, err := MarshalIndent(vcsp.MakeItems(items))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	libOK := client.Upload(ctx, libJSONPath, libData, "application/json; charset=utf-8") == nil
 	itemsOK := client.Upload(ctx, itemsJSONPath, itemsData, "application/json; charset=utf-8") == nil
 	if libOK && itemsOK {
 		logging.Info("Successfully created/updated content library.", "library_name", libName, "status", "success")
-		return nil
+		if opts.ShowChanges {
+			logChangeSummary(libName, updating, changed, false, summaryVersion, result.Changes)
+		}
+		return result, nil
 	}
-	return fmt.Errorf("failed to upload some content library metadata files")
+	return result, fmt.Errorf("failed to upload some content library metadata files")
+}
+
+func logChangeSummary(libName string, updating, changed, dryRun bool, libVersion int, changes []ItemChange) {
+	for _, line := range formatChangeSummary(libName, updating, changed, dryRun, libVersion, changes) {
+		logging.Info(line)
+	}
+	for _, c := range changes {
+		logging.Info("metadata change",
+			"action", c.Action, "item", c.Path, "name", c.Name, "reason", c.Reason)
+	}
+}
+
+func formatChangeSummary(libName string, updating, changed, dryRun bool, libVersion int, changes []ItemChange) []string {
+	if updating && !changed {
+		if dryRun {
+			return []string{"No JSON metadata would change. Content library is already up to date."}
+		}
+		return []string{"Content library is already up to date."}
+	}
+
+	nextVer := libVersion
+	if updating && changed {
+		nextVer = libVersion + 1
+	}
+
+	var lines []string
+	switch {
+	case dryRun && updating:
+		lines = append(lines, fmt.Sprintf("Would update content library %q (lib.json %d -> %d)", libName, libVersion, nextVer))
+	case dryRun:
+		lines = append(lines, fmt.Sprintf("Would create content library %q", libName))
+	case updating:
+		lines = append(lines, fmt.Sprintf("Updated content library %q (lib.json %d -> %d)", libName, libVersion, nextVer))
+	default:
+		lines = append(lines, fmt.Sprintf("Created content library %q", libName))
+	}
+
+	for _, c := range changes {
+		label := c.Path
+		if label == "" {
+			label = c.Name
+		}
+		line := fmt.Sprintf("  %-7s %s", c.Action, label)
+		if c.Action == ChangeUpdate && c.Reason != "" {
+			line += " (" + c.Reason + ")"
+		}
+		lines = append(lines, line)
+	}
+	lines = append(lines, "  write   lib.json, items.json")
+	return lines
 }
 
 func fileNamesEqual(a, b []vcsp.FileInfo) bool {
